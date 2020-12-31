@@ -10,9 +10,9 @@ Ben Crowell's `when` program, as `nvim` is to `vim`.
 ; You can specify the date in any order.
 (event "Save the world" :month july :day 4 :year 2025)
 ; If you leave out a date field, the event will repeat.
-(event "Amelia's Birthday" :day 5 :month august) ; This repeats every August 5
+(event "Amelia's Birthday" :day 5 :month :august) ; This repeats every August 5
 ; There is a shortcut function for birthdays.
-(birthday "Thomas" :day 29 :month november)
+(birthday "Thomas" :day 29 :month :november)
 
 ; To avoid repetition, you can create 'scopes' like the following
 (year 2021
@@ -23,9 +23,9 @@ Ben Crowell's `when` program, as `nvim` is to `vim`.
     (event "Physics Exam" :day 2)))    ; Implies 2021-02-02
 
 ; You can separate your calendar amongst multiple files with the include
-; function.
+; function. Paths are always relative to NWHEN_HOME.
 (include "birthdays")
-(include "$HOME/calendar/exams.nwhen")
+(include "exams")
 ```
 
 By default, `nwhen` tries to open `$HOME/calendar` as the calendar file.
