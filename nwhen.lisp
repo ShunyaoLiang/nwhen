@@ -5,7 +5,7 @@
   (:export #:main))
 (in-package #:nwhen)
 
-(defparameter *nwhen-home* (or (uiop:getenv "NWHEN_HOME")
+(defparameter *nwhen-home* (or (truename (uiop:getenv "NWHEN_HOME"))
                                (user-homedir-pathname)))
 
 (defparameter *unqualified-events* (list))
