@@ -4,6 +4,14 @@
   (:use #:cl)
   (:export #:main))
 
+(defparameter *nwhen-home*
+  (uiop:native-namestring (if (uiop:getenv "NWHEN_HOME")
+                              (uiop:getenv "NWHNE_HOME")
+                              "~"))) 
+
+(defparameter *unqualified-events* ())
+(defparameter *time-span* ())  
+
 (defparameter *scope-year* nil)
 (defparameter *scope-month* nil)
 (defparameter *scope-day* nil)
@@ -14,6 +22,11 @@
   `(let ((*scope-month* ,v)) ,@body))
 (defmacro day (v &body body)
   `(let ((*scope-day* ,v)) ,@body))
+
+(defun get-current-date ()
+  (multiple-value-bind (sec min hour day month year dow) (get-decoded-time)
+    (declare (ignore sec min hour))
+    (list :year year :month month :day day :dow dow)))
 
 (defun month-index (month)
   (case month
@@ -31,6 +44,16 @@
     (:december 12) (:dec 12)
     (otherwise month))) ; The case where it is nil or already an index.
 
+(defvar *chinese-year-lookahead* 1)
+
+(defun chinese-to-gregorian (year month day)
+  (read-from-string (uiop:run-program (list "python"
+                                            "lunisolar_to_gregorian.py"
+                                            (write-to-string year)
+                                            (write-to-string month)
+                                            (write-to-string day))
+                                      :output 'string)))
+
 (defun event (desc &key (year *scope-year*) (month *scope-month*) (day *scope-day*) chinese)
   ;; Here, it is impossible to know how far the program must look ahead. In addition, the
   ;; gregorian equivalents of a Chinese calendar date differ every year. Hence, if year is nil,
@@ -38,7 +61,6 @@
   ;; to *unqualified-events*. Terrible hack.
   (if (and chinese (not year))
       (progn
-        (defvar *chinese-year-lookahead* 1)
         (setf year (getf (get-current-date) :year))
         (loop for i from 0 upto *chinese-year-lookahead*
               do (push (append (list :desc desc) (chinese-to-gregorian (+ year i) month day)) *unqualified-events*)))
@@ -47,10 +69,16 @@
 (defun birthday (name &key month day chinese)
   (event (concatenate 'string name "'s Birthday") :month month :day day :chinese chinese))
 
-(defun get-current-date ()
-  (multiple-value-bind (sec min hour day month year dow) (get-decoded-time)
-    (declare (ignore sec min hour))
-    (list :year year :month month :day day :dow dow)))
+(defun leap-p (year)
+  (cond ((not (zerop (rem year 4))) nil)
+        ((not (zerop (rem year 25))) t)
+        ((not (zerop (rem year 16))) nil)
+        (t t)))
+
+(defun days-in-month (month year)
+  (if (= month 2)
+      (if (leap-p year) 29 28)
+      (nth (1- month) '(31 28 31 30 31 30 31 31 30 31 30 31)))) 
 
 (defun inc-date (date)
   (let ((year (getf date :year))
@@ -61,18 +89,7 @@
         (if (> (1+ month) 12)
             (list :year (1+ year) :month 1 :day 1 :dow dow)
             (list :year year :month (1+ month) :day 1 :dow dow))
-        (list :year year :month month :day (1+ day) :dow dow))))
-
-(defun days-in-month (month year)
-  (if (= month 2)
-      (if (leap-p year) 29 28)
-      (nth (1- month) '(31 28 31 30 31 30 31 31 30 31 30 31))))
-
-(defun leap-p (year)
-  (cond ((not (zerop (rem year 4))) nil)
-        ((not (zerop (rem year 25))) t)
-        ((not (zerop (rem year 16))) nil)
-        (t t)))
+        (list :year year :month month :day (1+ day) :dow dow)))) 
 
 (defun wild-eq (a b)
   (or (not a) (= a b)))
@@ -85,14 +102,6 @@
 (defun compare-events (a b)
   (< (encode-universal-time 0 0 0 (getf a :day) (getf a :month) (getf a :year))
      (encode-universal-time 0 0 0 (getf b :day) (getf b :month) (getf b :year))))
-
-(defun chinese-to-gregorian (year month day)
-  (read-from-string (uiop:run-program (list "python"
-                                 "lunisolar_to_gregorian.py"
-                                 (write-to-string year)
-                                 (write-to-string month)
-                                 (write-to-string day))
-                           :output 'string)))
 
 (defun include (pathname)
   (load (concatenate 'string *nwhen-home* "/" pathname)))
@@ -125,14 +134,10 @@
                          (lambda (event) (date-wild-eq event date))
                          *unqualified-events*))) 'compare-events))
 
-(defun get-calendar-file ()
-  (let ((nwhen-home (uiop:getenv "NWHEN_HOME")))
-    (defparameter *nwhen-home* (uiop:native-namestring (if nwhen-home nwhen-home "~")))
-    (concatenate 'string *nwhen-home* "/calendar.nwhen")))
+(defun get-calendar-file () 
+  (concatenate 'string *nwhen-home* "/calendar.nwhen"))
 
 (defun main ()
-  (defparameter *unqualified-events* ())
-  (defparameter *time-span* ())
   (let ((*time-span* (make-time-span 30)))
     (load (get-calendar-file) :if-does-not-exist nil)
     (print (list 'upcoming-events
