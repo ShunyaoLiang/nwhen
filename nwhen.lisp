@@ -6,7 +6,7 @@
 
 (defparameter *nwhen-home*
   (uiop:native-namestring (if (uiop:getenv "NWHEN_HOME")
-                              (uiop:getenv "NWHNE_HOME")
+                              (uiop:getenv "NWHEN_HOME")
                               "~"))) 
 
 (defparameter *unqualified-events* ())
@@ -142,5 +142,3 @@
     (load (get-calendar-file) :if-does-not-exist nil)
     (print (list 'upcoming-events
                  (get-upcoming-events *time-span*)))))
-
-(main)
