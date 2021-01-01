@@ -3,18 +3,16 @@
 (defpackage #:nwhen
   (:use #:cl)
   (:export #:main))
+(in-package #:nwhen)
 
-(defparameter *nwhen-home*
-  (uiop:native-namestring (if (uiop:getenv "NWHEN_HOME")
-                              (uiop:getenv "NWHEN_HOME")
-                              "~"))) 
+(defparameter *nwhen-home* (user-homedir-pathname))
 
-(defparameter *unqualified-events* ())
-(defparameter *time-span* ())  
+(defparameter *unqualified-events* (list))
+(defparameter *time-interval* 30)
 
-(defparameter *scope-year* nil)
-(defparameter *scope-month* nil)
-(defparameter *scope-day* nil)
+(defvar *scope-year* nil)
+(defvar *scope-month* nil)
+(defvar *scope-day* nil)
 
 (defmacro year (v &body body)
   `(let ((*scope-year* ,v)) ,@body))
@@ -34,7 +32,7 @@
     (:february 2) (:feb 2)
     (:march 3) (:mar 3)
     (:april 4) (:apr 4)
-    (:may 5) 
+    (:may 5)
     (:june 6) (:jun 6)
     (:july 7) (:jul 7)
     (:august 8) (:aug 8)
@@ -44,7 +42,7 @@
     (:december 12) (:dec 12)
     (otherwise month))) ; The case where it is nil or already an index.
 
-(defvar *chinese-year-lookahead* 1)
+(defparameter *chinese-year-lookahead* 1)
 
 (defun chinese-to-gregorian (year month day)
   (read-from-string (uiop:run-program (list "python"
@@ -78,7 +76,7 @@
 (defun days-in-month (month year)
   (if (= month 2)
       (if (leap-p year) 29 28)
-      (nth (1- month) '(31 28 31 30 31 30 31 31 30 31 30 31)))) 
+      (nth (1- month) '(31 28 31 30 31 30 31 31 30 31 30 31))))
 
 (defun inc-date (date)
   (let ((year (getf date :year))
@@ -89,7 +87,7 @@
         (if (> (1+ month) 12)
             (list :year (1+ year) :month 1 :day 1 :dow dow)
             (list :year year :month (1+ month) :day 1 :dow dow))
-        (list :year year :month month :day (1+ day) :dow dow)))) 
+        (list :year year :month month :day (1+ day) :dow dow))))
 
 (defun wild-eq (a b)
   (or (not a) (= a b)))
@@ -104,7 +102,7 @@
      (encode-universal-time 0 0 0 (getf b :day) (getf b :month) (getf b :year))))
 
 (defun include (pathname)
-  (load (concatenate 'string *nwhen-home* "/" pathname)))
+  (load (merge-pathnames *nwhen-home* pathname)))
 
 (defun make-time-span (length)
   (loop repeat length
@@ -128,17 +126,16 @@
 (defun get-upcoming-events (time-span)
   (sort (loop for date in time-span
               for i from 0
-              append (mapcar 
+              append (mapcar
                        (lambda (event) (qualify-event event date i))
                        (remove-if-not
                          (lambda (event) (date-wild-eq event date))
                          *unqualified-events*))) 'compare-events))
 
-(defun get-calendar-file () 
-  (concatenate 'string *nwhen-home* "/calendar.nwhen"))
+(defun get-calendar-file ()
+  (merge-pathnames *nwhen-home* "calendar.nwhen"))
 
 (defun main ()
-  (let ((*time-span* (make-time-span 30)))
-    (load (get-calendar-file) :if-does-not-exist nil)
-    (print (list 'upcoming-events
-                 (get-upcoming-events *time-span*)))))
+  (in-package #:nwhen)
+  (load (get-calendar-file))
+  (print (list 'upcoming-events (get-upcoming-events (make-time-span *time-interval*)))))
