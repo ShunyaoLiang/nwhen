@@ -6,7 +6,7 @@ Ben Crowell's `when` program, as `nvim` is to `vim`.
 
 ```lisp
 ; Specify events like this:
-(event "Lunch with Ben" :year 2021 :month january :day 5)
+(event "Lunch with Ben" :year 2021 :month :january :day 5)
 ; You can specify the date in any order.
 (event "Save the world" :month july :day 4 :year 2025)
 ; If you leave out a date field, the event will repeat.
@@ -16,10 +16,10 @@ Ben Crowell's `when` program, as `nvim` is to `vim`.
 
 ; To avoid repetition, you can create 'scopes' like the following
 (year 2021
-  (month january
+  (month :january
     (event "Canoeing" :day 5)          ; Implies 2021-01-05
     (event "Hiking with Mum" :day 14)) ; Implies 2021-01-14
-  (month february
+  (month :february
     (event "Physics Exam" :day 2)))    ; Implies 2021-02-02
 
 ; You can separate your calendar amongst multiple files with the include
