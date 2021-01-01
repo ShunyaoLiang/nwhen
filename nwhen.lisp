@@ -5,10 +5,11 @@
   (:export #:main))
 (in-package #:nwhen)
 
-(defparameter *nwhen-home* (user-homedir-pathname))
+(defparameter *nwhen-home* (or (uiop:getenv "NWHEN_HOME")
+                               (user-homedir-pathname)))
 
 (defparameter *unqualified-events* (list))
-(defparameter *time-interval* 30)
+(defvar *time-span*)
 
 (defvar *scope-year* nil)
 (defvar *scope-month* nil)
@@ -137,5 +138,6 @@
 
 (defun main ()
   (in-package #:nwhen)
-  (load (get-calendar-file))
-  (print (list 'upcoming-events (get-upcoming-events (make-time-span *time-interval*)))))
+  (let ((*time-span* (make-time-span 30)))
+    (load (get-calendar-file))
+    (print (list 'upcoming-events (get-upcoming-events *time-span*)))))
