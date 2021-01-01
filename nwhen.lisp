@@ -134,7 +134,7 @@
   (defparameter *unqualified-events* ())
   (defparameter *time-span* ())
   (let ((*time-span* (make-time-span 30)))
-    (load (get-calendar-file))
+    (load (get-calendar-file) :if-does-not-exist nil)
     (print (list 'upcoming-events
                  (get-upcoming-events *time-span*)))))
 
