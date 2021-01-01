@@ -27,8 +27,8 @@
     (:august 8)
     (:september 9)
     (:october 10)
-    (november 11)
-    (december 12)
+    (:november 11)
+    (:december 12)
     (otherwise month))) ; The case where it is nil or already an index.
 
 (defun event (desc &key (year *scope-year*) (month *scope-month*) (day *scope-day*) chinese)
